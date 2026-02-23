@@ -1,0 +1,14 @@
+import os
+
+def Init():
+        with open("setting.json", "w") as f:
+                f.write(
+"""
+{
+        "path_init":"C://",
+        "command_history":true,
+        "command_history_write_to_file":true,
+        "command_history_file_path":"C:\\Program Files (x86)\\SnTerminal\\command_history"
+}
+"""
+                )
