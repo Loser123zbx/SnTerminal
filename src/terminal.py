@@ -2,9 +2,10 @@ import colorama
 import json
 import os
 import init
+import sn
 
 try:
-        with open("settings.json", "r") as f:
+        with open("setting.json", "r") as f:
                 settings = json.load(f)
         path_now = settings["path_now"]
         IS_COMMAND_HISTORY_OPEN = settings["command_history"]
@@ -13,6 +14,12 @@ try:
 
 except Exception as e:
         init.Init()
+        with open("setting.json", "r") as f:
+                settings = json.load(f)
+        path_now = settings["path_init"]
+        IS_COMMAND_HISTORY_OPEN = settings["command_history"]
+        IS_COMMAND_HISTORY_WRITE_TO_FILE = settings["command_history_write_to_file"]
+        COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]        
         
 
 
@@ -78,6 +85,7 @@ if IS_COMMAND_HISTORY_OPEN == True:
 class terminal():
         def __init__(self,path_now = "C:\\"):
                 self.path_now = path_now
+                os.system(f"cd {path_now}")
         def welcome(self):
                 try:
                         with open("version.json", "r") as f:
@@ -106,6 +114,7 @@ class terminal():
                 return input_command
         def handle_sys_command(self,command:str):
                 try:
+
                         output_ = os.system(command)
                         if IS_COMMAND_HISTORY_OPEN == True:
                                 COMMAND_OUTPUT_HISTORY.append(output_)
@@ -121,13 +130,28 @@ class terminal():
                 pass
 
         def handle_sn_command(self,command:str):
-                self.run_command(command)
+                sn.sn_command()
+                sn.sn_command.handle_command(command)
 
         def handle_command(self,command:str):
-                if command.split()[0] == "sn":
-                        self.handle_sn_command(command)
-                else:
-                        self.handle_sys_command(command)
+
+                try:
+                        if command.split()[0] == "sn":
+                                self.handle_sn_command(command)
+                        elif command.split()[0] == "cd":
+                                try:
+                                        path_now = command.split()[1]
+                                except Exception as e:
+                                        print(e)
+
+                        else:
+                                os.system(f"cd {path_now}")
+                                self.handle_sys_command(command)
+                except Exception as e:
+                        if command == "":
+                                pass
+                        else:
+                                print(e)
 
         def run(self):
                 while True:
