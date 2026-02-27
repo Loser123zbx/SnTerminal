@@ -3,6 +3,6 @@
         "path_init":"C://",
         "command_history":true,
         "command_history_write_to_file":true,
-        "command_history_file_path":"C:\\Program Files (x86)\\SnTerminal\\command_history",
-        "command_alias_file_path":"C:\\Program Files (x86)\\SnTerminal\\command_alias.json"
+        "command_history_file_path":"command_history/",
+        "command_alias_file_path":"command_alias.json"
 }

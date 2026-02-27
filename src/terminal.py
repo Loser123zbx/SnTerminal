@@ -3,7 +3,12 @@ import json
 import os
 import init
 import sn
+import platform
+import time
+from _logging import Log
 
+
+_Log = Log()
 try:
         with open("setting.json", "r") as f:
                 settings = json.load(f)
@@ -13,7 +18,11 @@ try:
         COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]
 
 except Exception as e:
-        init.Init()
+        _Log.log(_Log.INFO, "初始化失败...")
+        if platform.system() == "Windows":
+                init.Init_Windows()
+        else:
+                pass
         with open("setting.json", "r") as f:
                 settings = json.load(f)
         path_now = settings["path_init"]
@@ -80,37 +89,59 @@ if IS_COMMAND_HISTORY_OPEN == True:
         COMMAND_INPUT_HISTORY = []
         COMMAND_OUTPUT_HISTORY = []
 
-
+def get_time():
+        return time.strftime("%Y-%m-%d %H_%M_%S", time.localtime())
 
 class terminal():
-        def __init__(self,path_now = "C:\\"):
-                self.path_now = path_now
+        def __init__(self,path_init = "C:\\"):
+                global command_history_filename,path_now
+
+                path_now = path_init
                 os.system(f"cd {path_now}")
+                history_dir = os.path.abspath(COMMAND_HISTORY_FILE_PATH)
+                os.makedirs(history_dir, exist_ok=True)  # 确保目录存在
+                command_history_filename = f"{history_dir}/{get_time()}.txt" 
+                with open(command_history_filename, "w") as f:
+                        f.write(f"""
+__ _  _   _____              _          _ 
+/ __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
+\__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
+|___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
+______________________________________________
+{get_time()}
+COMMAND HISTORY:
+"""
+                        )
         def welcome(self):
                 try:
                         with open("version.json", "r") as f:
                                 version = json.load(f)
                 except Exception as e:
-                        print(e)
+                        _Log.log(level= _Log.Error,text= "版本文件不存在！")
+
                 print("""
         __ _  _   _____              _          _ 
         / __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
         \__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
         |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
         ________________________________________________
-        """ + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version['version']}" + RESETALL)
+        """ + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version['version']}" + RESETALL +"\n")
 
-        def handle_input(self,path_now) -> str:
+        def handle_input(self,path_run = path_now) -> str:
+                """
+                
+                """
                 input_command = input(
                         YELLOWFORE +"$ " + RESETALL +
-                        GREENFORE + BOLD + f"{path_now} " + RESETALL +
+                        GREENFORE + BOLD + f"{path_run} " + RESETALL +
                         BOLD + "> " + RESETALL)
+
                 if IS_COMMAND_HISTORY_OPEN == True:
                         COMMAND_INPUT_HISTORY.append(input_command)
                         
                 if IS_COMMAND_HISTORY_WRITE_TO_FILE == True:
-                        with open(COMMAND_HISTORY_FILE_PATH, "a") as f:
-                                f.write(input_command + "\n")
+                        with open(command_history_filename, "a") as f:
+                                f.write(f"[ {get_time()} : input -> {path_run}] {input_command} \n")
                 return input_command
         def handle_sys_command(self,command:str):
                 try:
@@ -120,20 +151,21 @@ class terminal():
                                 COMMAND_OUTPUT_HISTORY.append(output_)
 
                         if IS_COMMAND_HISTORY_WRITE_TO_FILE == True:
-                                with open(COMMAND_HISTORY_FILE_PATH, "a") as f:
-                                        f.write(output_ + "\n")
+                                with open(command_history_filename, "a") as f:
+                                        f.write(f"[ {get_time()} : output ] {output_} \n")
                         print(output_)
                 except Exception as e:
-                        print(e)
+                        _Log.log(level= _Log.Error,text= e)
+                        _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
         
         def run_command(self,command):
                 pass
 
-        def handle_sn_command(self,command:str):
-                sn.sn_command()
-                sn.sn_command.handle_command(command)
+        def handle_sn_command(self,command:str,path_run = path_now):
+                Sn_handle = sn.sn_command(path_run)
+                Sn_handle.handle_command(command)
 
-        def handle_command(self,command:str):
+        def handle_command(self,command:str ,path_run = path_now):
 
                 try:
                         if command.split()[0] == "sn":
@@ -141,11 +173,14 @@ class terminal():
                         elif command.split()[0] == "cd":
                                 try:
                                         path_now = command.split()[1]
+                                        os.system(f"cd {path_now}")
                                 except Exception as e:
                                         print(e)
+                                        _Log.log(level= _Log.Error,text= e)
+                                        _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
 
                         else:
-                                os.system(f"cd {path_now}")
+                                os.system(f"cd {path_run}")
                                 self.handle_sys_command(command)
                 except Exception as e:
                         if command == "":
@@ -153,9 +188,9 @@ class terminal():
                         else:
                                 print(e)
 
-        def run(self):
+        def run(self,path_run = path_now):
                 while True:
-                        command = self.handle_input(self.path_now)
+                        command = self.handle_input(path_run)
                         self.handle_command(command)
 
 if __name__ == "__main__":

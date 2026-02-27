@@ -15,6 +15,19 @@ class Log:
                         print("[WARNING] " + text)
                 elif level == self.DEBUG:
                         print("[DEBUG] " + text)
+        
+        def log_file(self,level = 0 , text = "" ,file = "?.txt") -> None:
+                if level == self.INFO:
+                        with open(file,"a") as f:
+                                f.write("[INFO] " + text + "\n")
+                elif level == self.ERROR:
+                        with open(file,"a") as f:
+                                f.write("[ERROR] " + text + "\n")
+                elif level == self.WARNING:
+                        with open(file,"a") as f:
+                                f.write("[WARNING] " + text + "\n")
+                                
+
 
 if __name__ == "__main__":
         log = Log()

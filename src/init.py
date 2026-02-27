@@ -1,6 +1,6 @@
 import os
 
-def Init():
+def Init_Windows():
     # 创建必要的目录
     base_dir = "C:\\Program Files (x86)\\SnTerminal"
     os.makedirs(base_dir, exist_ok=True)  # 确保目录存在
@@ -13,19 +13,18 @@ def Init():
         "path_init":"C://",
         "command_history":true,
         "command_history_write_to_file":true,
-        "command_history_file_path":"C:\\\\Program Files (x86)\\\\SnTerminal\\\\command_history",
-        "command_alias_file_path":"C:\\\\Program Files (x86)\\\\SnTerminal\\\\command_alias.json"
+        "command_history_file_path":"command_history/",
+        "command_alias_file_path":"command_alias.json"
 }
 """
         )
 
     # 写入 command_alias.json 文件
-    with open(os.path.join(base_dir, "command_alias.json"), "w") as f:
+    with open("command_alias.json", "w") as f:
         f.write("")
 
-    # 写入 command_history 文件
-    with open(os.path.join(base_dir, "command_history"), "w") as f:
-        f.write("")
+    # 创建 command_history 文件夹
+    os.makedirs(("command_history"), exist_ok=True)
 
 if __name__ == "__main__":
-    Init()
+    Init_Windows()
