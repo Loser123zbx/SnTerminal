@@ -1,4 +1,6 @@
 /target
 /src/command_history
 /src/__pycache__
-/venv
+/.venv
+/.vscode
+*.dll
