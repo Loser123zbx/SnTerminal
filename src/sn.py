@@ -28,6 +28,7 @@ class sn_command:
                         # 使用 shutil.rmtree 递归删除目录及其内容
                         shutil.rmtree(COMMAND_HISTORY_FILE_PATH)
                         log.log(level=log.INFO, text="Clean history successfully")
+                        os.mkdir(COMMAND_HISTORY_FILE_PATH)
                 except Exception as e:
                         log.log(level=log.ERROR, text="Error: " + str(e))       
 

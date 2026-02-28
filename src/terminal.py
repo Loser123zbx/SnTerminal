@@ -1,3 +1,4 @@
+
 import colorama
 import json
 import os
@@ -6,6 +7,8 @@ import sn
 import platform
 import time
 from _logging import Log
+import sys
+import os_command
 
 
 _Log = Log()
@@ -96,6 +99,10 @@ class terminal():
         def __init__(self,path_init = "C:\\"):
                 global command_history_filename,path_now
 
+
+                self.system_command_handler = os_command.SystemCommandExecutor()
+                self.system_command_handler.set_working_directory(path_init)
+
                 path_now = path_init
                 os.system(f"cd {path_now}")
                 history_dir = os.path.abspath(COMMAND_HISTORY_FILE_PATH)
@@ -108,7 +115,8 @@ __ _  _   _____              _          _
 \__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
 |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
 ______________________________________________
-{get_time()}
+TIME: {get_time()} 
+SYS : {sys.platform} {platform.uname()}
 COMMAND HISTORY:
 """
                         )
@@ -119,18 +127,22 @@ COMMAND HISTORY:
                 except Exception as e:
                         _Log.log(level= _Log.Error,text= "版本文件不存在！")
 
-                print("""
-        __ _  _   _____              _          _ 
-        / __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
-        \__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
-        |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
-        ________________________________________________
-        """ + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version['version']}" + RESETALL +"\n")
+                print(f"""
+__ _  _   _____              _          _ 
+/ __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
+\__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
+|___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
+________________________________________________
+
+{platform.uname()[1]}
+
+""" + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version['version']}" + RESETALL +"\n")
 
         def handle_input(self,path_run = path_now) -> str:
                 """
                 
                 """
+                
                 input_command = input(
                         YELLOWFORE +"$ " + RESETALL +
                         GREENFORE + BOLD + f"{path_run} " + RESETALL +
@@ -173,15 +185,19 @@ COMMAND HISTORY:
                         elif command.split()[0] == "cd":
                                 try:
                                         path_now = command.split()[1]
-                                        os.system(f"cd {path_now}")
+                                        self.system_command_handler.set_working_directory(path_now)
                                 except Exception as e:
                                         print(e)
                                         _Log.log(level= _Log.Error,text= e)
                                         _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
 
                         else:
-                                os.system(f"cd {path_run}")
-                                self.handle_sys_command(command)
+                                self.system_command_handler.execute_command(command)
+                                if IS_COMMAND_HISTORY_OPEN == True:
+                                        COMMAND_OUTPUT_HISTORY.append(self.system_command_handler.get_command_history()[-1])
+                                        _Log.log_file(level= _Log.INFO,text= self.system_command_handler.get_command_history()[-1],file= command_history_filename)
+
+
                 except Exception as e:
                         if command == "":
                                 pass
