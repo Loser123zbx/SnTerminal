@@ -96,6 +96,9 @@ def get_time():
         return time.strftime("%Y-%m-%d %H_%M_%S", time.localtime())
 
 class terminal():
+        """
+        
+        """
         def __init__(self,path_init = "C:\\"):
                 global command_history_filename,path_now
 
@@ -122,9 +125,10 @@ COMMAND HISTORY:
                         )
         def welcome(self):
                 try:
-                        with open("version.json", "r") as f:
-                                version = json.load(f)
+                        with open("version.txt", "r") as f:
+                                version = f.read()
                 except Exception as e:
+                        version = "Unknown"
                         _Log.log(level= _Log.Error,text= "版本文件不存在！")
 
                 print(f"""
@@ -136,11 +140,14 @@ ________________________________________________
 
 {platform.uname()[1]}
 
-""" + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version['version']}" + RESETALL +"\n")
+""" + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version}" + RESETALL +"\n")
 
         def handle_input(self,path_run = path_now) -> str:
                 """
-                
+                输入处理函数
+                :param path_run: 当前执行目录
+                :return: 输入的字符串
+
                 """
                 
                 input_command = input(
@@ -156,6 +163,10 @@ ________________________________________________
                                 f.write(f"[ {get_time()} : input -> {path_run}] {input_command} \n")
                 return input_command
         def handle_sys_command(self,command:str):
+                """
+                系统命令处理函数
+                :param command: 命令字符串
+                """
                 try:
 
                         output_ = os.system(command)
@@ -169,15 +180,24 @@ ________________________________________________
                 except Exception as e:
                         _Log.log(level= _Log.Error,text= e)
                         _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
-        
-        def run_command(self,command):
-                pass
 
         def handle_sn_command(self,command:str,path_run = path_now):
+                """
+                Sn命令处理函数
+                :param command: 命令字符串
+                :param path_run: 运行路径
+                """
                 Sn_handle = sn.sn_command(path_run)
                 Sn_handle.handle_command(command)
 
         def handle_command(self,command:str ,path_run = path_now):
+                """
+                命令处理函数
+                        -> handle_sn_command
+                        -> handle_sys_command
+                :param command: 命令字符串
+                :param path_run: 运行路径
+                """
 
                 try:
                         if command.split()[0] == "sn":
@@ -205,6 +225,10 @@ ________________________________________________
                                 print(e)
 
         def run(self,path_run = path_now):
+                """
+                控制台运行函数
+                :param path_run: 运行路径
+                """
                 while True:
                         command = self.handle_input(path_run)
                         self.handle_command(command)
