@@ -132,7 +132,7 @@ COMMAND HISTORY:
                         _Log.log(level= _Log.Error,text= "版本文件不存在！")
 
                 print(f"""
-__ _  _   _____              _          _ 
+ __ _  _   _____              _          _ 
 / __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
 \__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
 |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
@@ -198,6 +198,7 @@ ________________________________________________
                 :param command: 命令字符串
                 :param path_run: 运行路径
                 """
+                
 
                 try:
                         if command.split()[0] == "sn":
@@ -237,3 +238,4 @@ if __name__ == "__main__":
         test = terminal()
         test.welcome()
         test.run()
+        #
