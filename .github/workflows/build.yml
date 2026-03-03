@@ -12,11 +12,10 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
         python-version: [3.11]
-
     steps:
       # 步骤 1: 检出代码
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 步骤 2: 设置 Python 环境
       - name: Set up Python ${{ matrix.python-version }}
@@ -24,15 +23,26 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # 步骤 3: 安装依赖
-      - name: Install dependencies
+      # 步骤 3: 安装依赖（含编译器）
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc zip
+          python -m pip install --upgrade pip
+          pip install pyinstaller wxpython colorama
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install -y mingw
           python -m pip install --upgrade pip
           pip install pyinstaller wxpython colorama
 
       # 步骤 4: 编译 os_command 模块
       - name: Compile os_command (Windows)
         if: matrix.os == 'windows-latest'
+        shell: bash
         run: |
           gcc -shared -fPIC -o src/os_command.dll src/os_command.c
 
@@ -52,48 +62,62 @@ jobs:
           pyinstaller --onefile --distpath ./dist src/gui.py
 
       # 步骤 7: 创建 ZIP 包
-      - name: Create ZIP package
+      - name: Create ZIP package (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
         run: |
           mkdir -p release
-          cp -r dist/* release/
-          cp src/os_command.* release/
+          cp dist/* release/
+          cp src/os_command.dll release/
           cp src/version.txt release/
           cd release
-          zip -r ../SnTerminal-${{ matrix.os }}.zip *
+          zip -r ../SnTerminal-windows-latest.zip *
 
-      # 步骤 8: 上传构建产物（升级到 v4）
-      - name: Upload artifacts
+      - name: Create ZIP package (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p release
+          cp dist/* release/
+          cp src/os_command.so release/
+          cp src/version.txt release/
+          cd release
+          zip -r ../SnTerminal-ubuntu-latest.zip *
+
+      # 步骤 8: 上传构建产物
+      - name: Upload artifact (Windows)
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: SnTerminal-${{ matrix.os }}
-          path: SnTerminal-${{ matrix.os }}.zip
+          name: SnTerminal-windows-latest
+          path: SnTerminal-windows-latest.zip
+
+      - name: Upload artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SnTerminal-ubuntu-latest
+          path: SnTerminal-ubuntu-latest.zip
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # 步骤 1: 检出代码
+      # 步骤 1: 检出代码（可选）
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # 步骤 2: 下载构建产物（升级到 v4）
+      # 步骤 2: 下载构建产物
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
 
-      # 步骤 3: 读取版本号
-      - name: Read version from version.txt
-        id: version
-        run: |
-          echo "VERSION=$(cat src/version.txt)" >> $GITHUB_ENV
-
-      # 步骤 4: 创建 GitHub Release
+      # 步骤 3-4: 创建 GitHub Release（直接用 tag 名字）
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.VERSION }}
-          name: Release v${{ env.VERSION }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: |
             自动构建的 SnTerminal 发布版本。
             包含 Windows 和 Linux 平台的可执行文件及动态链接库。
