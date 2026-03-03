@@ -30,14 +30,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential gcc zip
           python -m pip install --upgrade pip
-          pip install pyinstaller wxpython colorama
+          pip install pyinstaller wxpython==4.2.5 colorama
 
       - name: Install dependencies (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           choco install -y mingw
           python -m pip install --upgrade pip
-          pip install pyinstaller wxpython colorama
+          pip install pyinstaller wxpython==4.2.5 colorama
 
       # 步骤 4: 编译 os_command 模块
       - name: Compile os_command (Windows)
