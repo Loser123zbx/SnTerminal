@@ -78,14 +78,13 @@ jobs:
       # 步骤 7: 创建 ZIP 包
       - name: Create ZIP package (Windows)
         if: matrix.os == 'windows-latest'
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p release
-          cp dist/* release/
-          cp src/os_command.dll release/
-          cp src/version.txt release/
-          cd release
-          zip -r ../SnTerminal-windows-latest.zip *
+          New-Item -ItemType Directory -Force -Path release
+          Copy-Item dist/* release/
+          Copy-Item src/os_command.dll release/
+          Copy-Item src/version.txt release/
+          Compress-Archive -Path release/* -DestinationPath SnTerminal-windows-latest.zip -Force
 
       - name: Create ZIP package (Linux)
         if: matrix.os == 'ubuntu-latest'
