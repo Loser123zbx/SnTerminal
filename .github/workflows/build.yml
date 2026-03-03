@@ -28,7 +28,18 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential gcc zip
+          sudo apt-get install -y build-essential gcc zip \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev \
+            libgl1-mesa-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer1.0-dev \
+            libnotify-dev \
+            libxtst-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbfile-dev
           python -m pip install --upgrade pip
           pip install pyinstaller wxpython==4.2.5 colorama
 
