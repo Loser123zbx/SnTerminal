@@ -26,8 +26,8 @@ class Log:
                 elif level == self.WARNING:
                         with open(file,"a") as f:
                                 f.write("[WARNING] " + text + "\n")
-                                
 
+                                                
 
 if __name__ == "__main__":
         log = Log()

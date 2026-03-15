@@ -8,7 +8,9 @@ import platform
 import time
 from _logging import Log
 import sys
-import os_command
+import subprocess
+from datetime import datetime
+from typing import Dict
 
 
 _Log = Log()
@@ -19,11 +21,12 @@ try:
         IS_COMMAND_HISTORY_OPEN = settings["command_history"]
         IS_COMMAND_HISTORY_WRITE_TO_FILE = settings["command_history_write_to_file"]
         COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]
+        TERMINAL_ENCODING = settings["terminal_encoding"]
 
 except Exception as e:
-        _Log.log(_Log.INFO, "初始化失败...")
+        _Log.log(_Log.ERROR, "初始化失败...")
         if platform.system() == "Windows":
-                init.Init_Windows()
+            pass
         else:
                 pass
         with open("setting.json", "r") as f:
@@ -32,6 +35,7 @@ except Exception as e:
         IS_COMMAND_HISTORY_OPEN = settings["command_history"]
         IS_COMMAND_HISTORY_WRITE_TO_FILE = settings["command_history_write_to_file"]
         COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]        
+        TERMINAL_ENCODING = settings["terminal_encoding"]
         
 
 
@@ -103,8 +107,6 @@ class terminal():
                 global command_history_filename,path_now
 
 
-                self.system_command_handler = os_command.SystemCommandExecutor()
-                self.system_command_handler.set_working_directory(path_init)
 
                 path_now = path_init
                 os.system(f"cd {path_now}")
@@ -113,11 +115,11 @@ class terminal():
                 command_history_filename = f"{history_dir}/{get_time()}.txt" 
                 with open(command_history_filename, "w") as f:
                         f.write(f"""
-__ _  _   _____              _          _ 
+  __ _  _   _____              _          _                     
 / __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
 \__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
 |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
-______________________________________________
+______________________________________________            
 TIME: {get_time()} 
 SYS : {sys.platform} {platform.uname()}
 COMMAND HISTORY:
@@ -132,36 +134,43 @@ COMMAND HISTORY:
                         _Log.log(level= _Log.Error,text= "版本文件不存在！")
 
                 print(f"""
- __ _  _   _____              _          _ 
+ __ _  _   _____              _          _                          
 / __| \| | |_   _|__ _ _ _ __ (_)_ _ __ _| |
-\__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |
-|___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|
-________________________________________________
-
-{platform.uname()[1]}
+\__ \ .` |   | |/ -_) '_| '  \| | '_/ _` | |                                        {BLUEBACK + "Sn Terminal" + RESETALL}
+|___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|                                        TIME: {get_time()}
+________________________________________________                                    SYSTEM: {platform.uname()[0]}{platform.uname()[2]}({platform.uname()[3]})
+                                                                                    COMPUTER: {platform.uname()[1]}
+                                                                                    User: {os.getlogin()}
 
 """ + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version}" + RESETALL +"\n")
 
-        def handle_input(self,path_run = path_now) -> str:
+        def handle_input(self, path_run = path_now) -> str:
                 """
                 输入处理函数
                 :param path_run: 当前执行目录
                 :return: 输入的字符串
-
                 """
-                
-                input_command = input(
-                        YELLOWFORE +"$ " + RESETALL +
-                        GREENFORE + BOLD + f"{path_run} " + RESETALL +
-                        BOLD + "> " + RESETALL)
-
-                if IS_COMMAND_HISTORY_OPEN == True:
-                        COMMAND_INPUT_HISTORY.append(input_command)
+                try:
+                        # 标准化路径显示
+                        display_path = path_run.replace("//", "/").replace("\\", "/")
                         
-                if IS_COMMAND_HISTORY_WRITE_TO_FILE == True:
-                        with open(command_history_filename, "a") as f:
-                                f.write(f"[ {get_time()} : input -> {path_run}] {input_command} \n")
-                return input_command
+                        input_command = input(
+                        YELLOWFORE + "$ " + RESETALL +
+                        GREENFORE + BOLD + f"{display_path} " + RESETALL +
+                        BOLD + "> " + RESETALL
+                        )
+
+                        if IS_COMMAND_HISTORY_OPEN == True:
+                                COMMAND_INPUT_HISTORY.append(input_command)
+                        
+                        if IS_COMMAND_HISTORY_WRITE_TO_FILE == True:
+                                with open(command_history_filename, "a") as f:
+                                        f.write(f"[ {get_time()} : input -> {path_run}] {input_command} \n")
+                        return input_command
+                        
+                except KeyboardInterrupt:
+                        # 重新抛出，让 run() 方法处理
+                        raise
         def handle_sys_command(self,command:str):
                 """
                 系统命令处理函数
@@ -179,7 +188,7 @@ ________________________________________________
                         print(output_)
                 except Exception as e:
                         _Log.log(level= _Log.Error,text= e)
-                        _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
+                        _Log.log_file(level= _Log.ERROR,text= e,file= command_history_filename)
 
         def handle_sn_command(self,command:str,path_run = path_now):
                 """
@@ -190,40 +199,43 @@ ________________________________________________
                 Sn_handle = sn.sn_command(path_run)
                 Sn_handle.handle_command(command)
 
-        def handle_command(self,command:str ,path_run = path_now):
-                """
-                命令处理函数
-                        -> handle_sn_command
-                        -> handle_sys_command
-                :param command: 命令字符串
-                :param path_run: 运行路径
-                """
-                
-
+        def handle_command(self,command:str ,path_run = path_now,print_output: bool = True) -> Dict[str, str]:
                 try:
-                        if command.split()[0] == "sn":
-                                self.handle_sn_command(command)
-                        elif command.split()[0] == "cd":
-                                try:
-                                        path_now = command.split()[1]
-                                        self.system_command_handler.set_working_directory(path_now)
-                                except Exception as e:
-                                        print(e)
-                                        _Log.log(level= _Log.Error,text= e)
-                                        _Log.log_file(level= _Log.Error,text= e,file= command_history_filename)
-
+                        # 启动子进程
+                        process = subprocess.Popen(
+                                command,
+                                shell=True,
+                                cwd=path_run,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                text=True,
+                                encoding=TERMINAL_ENCODING,
+                                errors='ignore'
+                        )
+                        
+                        output = ""
+                        
+                        # 逐行读取输出并实时打印
+                        for line in process.stdout:
+                                output += line
+                                if print_output:
+                                        print(line, end='')
+                        
+                        # 等待进程结束并获取返回码
+                        return_code = process.wait()
+                        
+                        # 根据返回码决定时间戳
+                        if return_code == 0:
+                                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                return {timestamp: output}
                         else:
-                                self.system_command_handler.execute_command(command)
-                                if IS_COMMAND_HISTORY_OPEN == True:
-                                        COMMAND_OUTPUT_HISTORY.append(self.system_command_handler.get_command_history()[-1])
-                                        _Log.log_file(level= _Log.INFO,text= self.system_command_handler.get_command_history()[-1],file= command_history_filename)
-
-
+                                return {"0": output}
+                        
                 except Exception as e:
-                        if command == "":
-                                pass
-                        else:
-                                print(e)
+                        error_msg = f"执行异常：{str(e)}"
+                        if print_output:
+                                print(error_msg)
+                                return {"0": error_msg}
 
         def run(self,path_run = path_now):
                 """
@@ -235,7 +247,14 @@ ________________________________________________
                         self.handle_command(command)
 
 if __name__ == "__main__":
-        test = terminal()
-        test.welcome()
-        test.run()
-        #
+        try:
+                test = terminal()
+                test.welcome()
+                test.run()
+        except KeyboardInterrupt:
+                print(f"\n{YELLOWFORE}程序被用户中断{RESETALL}")
+        except Exception as e:
+                _Log.log(level=_Log.ERROR, text=f"启动失败：{str(e)}")
+                print(f"{REDFORE}启动失败：{str(e)}{RESETALL}")
+        finally:
+                print(f"{GREENFORE}感谢使用 SnTerminal{RESETALL}")
