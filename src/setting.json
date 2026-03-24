@@ -1,6 +1,6 @@
 
 {
-        "path_init":"C://",
+        "path_init":"D://",
         "command_history":true,
         "command_history_write_to_file":true,
         "command_history_file_path":"command_history/",

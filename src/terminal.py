@@ -17,7 +17,7 @@ _Log = Log()
 try:
         with open("setting.json", "r") as f:
                 settings = json.load(f)
-        path_now = settings["path_now"]
+        PATH_INIT = settings["path_init"]
         IS_COMMAND_HISTORY_OPEN = settings["command_history"]
         IS_COMMAND_HISTORY_WRITE_TO_FILE = settings["command_history_write_to_file"]
         COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]
@@ -31,7 +31,7 @@ except Exception as e:
                 pass
         with open("setting.json", "r") as f:
                 settings = json.load(f)
-        path_now = settings["path_init"]
+        PATH_INIT = settings["path_init"]
         IS_COMMAND_HISTORY_OPEN = settings["command_history"]
         IS_COMMAND_HISTORY_WRITE_TO_FILE = settings["command_history_write_to_file"]
         COMMAND_HISTORY_FILE_PATH = settings["command_history_file_path"]        
@@ -103,16 +103,13 @@ class terminal():
         """
         
         """
-        def __init__(self,path_init = "C:\\"):
-                global command_history_filename,path_now
-
-
-
-                path_now = path_init
-                os.system(f"cd {path_now}")
-                history_dir = os.path.abspath(COMMAND_HISTORY_FILE_PATH)
-                os.makedirs(history_dir, exist_ok=True)  # 确保目录存在
-                command_history_filename = f"{history_dir}/{get_time()}.txt" 
+        def __init__(self,path_init = PATH_INIT):
+                global command_history_filename
+                self.path_now = path_init
+                os.system(f"cd {self.path_now}")
+                self.history_dir = os.path.abspath(COMMAND_HISTORY_FILE_PATH)
+                os.makedirs(self.history_dir, exist_ok=True)  # 确保目录存在
+                command_history_filename = f"{self.history_dir}/{get_time()}.txt" 
                 with open(command_history_filename, "w") as f:
                         f.write(f"""
   __ _  _   _____              _          _                     
@@ -140,17 +137,18 @@ COMMAND HISTORY:
 |___/_|\_|   |_|\___|_| |_|_|_|_|_| \__,_|_|                                        TIME: {get_time()}
 ________________________________________________                                    SYSTEM: {platform.uname()[0]}{platform.uname()[2]}({platform.uname()[3]})
                                                                                     COMPUTER: {platform.uname()[1]}
-                                                                                    User: {os.getlogin()}
+                                                                                    USER: {os.getlogin()}
 
 """ + "\n" + YELLOWFORE + BOLD + f"SnTerminal {version}" + RESETALL +"\n")
 
-        def handle_input(self, path_run = path_now) -> str:
+        def handle_input(self) -> str:
                 """
                 输入处理函数
                 :param path_run: 当前执行目录
                 :return: 输入的字符串
                 """
                 try:
+                        path_run = self.path_now
                         # 标准化路径显示
                         display_path = path_run.replace("//", "/").replace("\\", "/")
                         
@@ -171,36 +169,13 @@ ________________________________________________                                
                 except KeyboardInterrupt:
                         # 重新抛出，让 run() 方法处理
                         raise
-        def handle_sys_command(self,command:str):
+        def handle_sys_command(self,command:str,print_output: bool = True) -> Dict[str, str]:
                 """
                 系统命令处理函数
                 :param command: 命令字符串
                 """
                 try:
-
-                        output_ = os.system(command)
-                        if IS_COMMAND_HISTORY_OPEN == True:
-                                COMMAND_OUTPUT_HISTORY.append(output_)
-
-                        if IS_COMMAND_HISTORY_WRITE_TO_FILE == True:
-                                with open(command_history_filename, "a") as f:
-                                        f.write(f"[ {get_time()} : output ] {output_} \n")
-                        print(output_)
-                except Exception as e:
-                        _Log.log(level= _Log.Error,text= e)
-                        _Log.log_file(level= _Log.ERROR,text= e,file= command_history_filename)
-
-        def handle_sn_command(self,command:str,path_run = path_now):
-                """
-                Sn命令处理函数
-                :param command: 命令字符串
-                :param path_run: 运行路径
-                """
-                Sn_handle = sn.sn_command(path_run)
-                Sn_handle.handle_command(command)
-
-        def handle_command(self,command:str ,path_run = path_now,print_output: bool = True) -> Dict[str, str]:
-                try:
+                        path_run = self.path_now
                         # 启动子进程
                         process = subprocess.Popen(
                                 command,
@@ -236,14 +211,65 @@ ________________________________________________                                
                         if print_output:
                                 print(error_msg)
                                 return {"0": error_msg}
+                try:
+                        process.close()
+                        return {"0": "Process closed"}
+                except Exception as e:
+                        error_msg = f"关闭进程异常：{str(e)}"
+                        if print_output:
+                                print(error_msg)
+                                return {"0": error_msg}
 
-        def run(self,path_run = path_now):
+
+        def handle_sn_command(self,command:str):
+                """
+                Sn命令处理函数
+                :param command: 命令字符串
+                :param path_run: 运行路径
+                """
+                path_run = self.path_now
+                Sn_handle = sn.sn_command(path_run)
+                Sn_handle.handle_command(command)
+
+        def handle_command(self,command:str ,print_output: bool = True) -> Dict[str, str]:
+                """
+                命令处理函数
+                :param command: 命令字符串
+                :param path_run: 运行路径
+                """
+                path_run = self.path_now
+                print(f"{path_run}")
+                if command.startswith("sn "):
+                        self.handle_sn_command(command)
+                        return {"0": "Handled by Sn command handler"}
+                elif command.startswith("cd "):
+                        new_path = command.split(" ")[1]
+                        try:
+                                self.self.path_now = new_path
+                                print(f"Changed directory to {new_path}")
+                                return {"0": f"Changed directory to {new_path}"}
+                        except OSError as e:
+                                return {"0": f"Error changing directory: {str(e)}"}
+                        except ValueError:
+                                return {"0": "Invalid directory path"}
+                        except FileNotFoundError:
+                                return {"0": f"Directory {new_path} does not exist"}
+                        except PermissionError:
+                                return {"0": f"Permission denied: {new_path}"}
+                        except Exception as e:
+                                return {"0": f"Error changing directory: {str(e)}"}
+
+                else:
+                        return self.handle_sys_command(command, print_output)
+
+        def run(self):
                 """
                 控制台运行函数
                 :param path_run: 运行路径
                 """
+                path_run = self.path_now
                 while True:
-                        command = self.handle_input(path_run)
+                        command = self.handle_input()
                         self.handle_command(command)
 
 if __name__ == "__main__":
